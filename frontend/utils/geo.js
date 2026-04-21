@@ -1,23 +1,21 @@
 export async function fetchGeoData() {
-    const worldUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-    const algeriaUrl = "https://cdn.jsdelivr.net/gh/clm-m/algeria-geojson@master/algeria.json";
+    // Using local data as requested
+    const worldUrl = "./data/countries-110m.json";
+    const algeriaUrl = "./data/all-wilayas.geojson";
 
-    const [worldResponse, algeriaResponse] = await Promise.all([
-        fetch(worldUrl),
-        fetch(algeriaUrl)
-    ]);
+    const results = { world: null, algeria: null };
 
-    const worldData = await worldResponse.json();
-    const algeriaData = await algeriaResponse.json();
+    try {
+        const worldResp = await fetch(worldUrl);
+        if (worldResp.ok) results.world = await worldResp.json();
+        else console.warn("Local world map load failed", worldResp.status);
+    } catch (e) { console.error("World map error", e); }
 
-    console.log("Geo Data Loaded - World:", !!worldData, "Algeria:", !!algeriaData);
+    try {
+        const algeriaResp = await fetch(algeriaUrl);
+        if (algeriaResp.ok) results.algeria = await algeriaResp.json();
+        else console.warn("Local algeria map load failed", algeriaResp.status);
+    } catch (e) { console.error("Algeria map error", e); }
 
-    return {
-        world: worldData,
-        algeria: algeriaData
-    };
-}
-
-export function getWilayaCentroid(feature) {
-    return d3.geoCentroid(feature);
+    return results;
 }

@@ -6,10 +6,6 @@ export class GlobeRenderer {
         this.tooltip = tooltip;
         this.context = canvas.getContext('2d');
         
-        // Offscreen buffer for expensive map rendering
-        this.bufferCanvas = document.createElement('canvas');
-        this.bufferContext = this.bufferCanvas.getContext('2d');
-        
         this.projection = d3.geoOrthographic()
             .scale(state.scale)
             .center([0, 0])
@@ -20,8 +16,7 @@ export class GlobeRenderer {
         this.cache = {
             land: null,
             countries: null,
-            algeria: null,
-            isDirty: true
+            algeria: null
         };
         
         this.width = 0;
@@ -40,41 +35,27 @@ export class GlobeRenderer {
         this.height = rect.height;
         
         const dpr = window.devicePixelRatio || 1;
-        
-        // Update main canvas
         this.canvas.width = this.width * dpr;
         this.canvas.height = this.height * dpr;
         this.context.scale(dpr, dpr);
-        
-        // Update buffer canvas
-        this.bufferCanvas.width = this.canvas.width;
-        this.bufferCanvas.height = this.canvas.height;
-        this.bufferContext.scale(dpr, dpr);
         
         this.projection.translate([this.width / 2, this.height / 2]);
         
         const minDim = Math.min(this.width, this.height);
         state.scale = minDim * 0.45;
         this.projection.scale(state.scale);
-        
-        this.cache.isDirty = true;
     }
 
     setupInteractions() {
         const drag = d3.drag()
-            .on('start', () => {
-                state.isDragging = true;
-            })
+            .on('start', () => { state.isDragging = true; })
             .on('drag', (event) => {
                 const r = this.projection.rotate();
                 const k = 75 / this.projection.scale();
                 this.projection.rotate([r[0] + event.dx * k, r[1] - event.dy * k]);
                 state.rotation = this.projection.rotate();
-                this.cache.isDirty = true;
             })
-            .on('end', () => {
-                state.isDragging = false;
-            });
+            .on('end', () => { state.isDragging = false; });
 
         d3.select(this.canvas).call(drag);
         
@@ -83,7 +64,6 @@ export class GlobeRenderer {
             const delta = -event.deltaY;
             state.scale = Math.max(100, Math.min(2000, state.scale + delta * 0.5));
             this.projection.scale(state.scale);
-            this.cache.isDirty = true;
         });
     }
 
@@ -94,7 +74,6 @@ export class GlobeRenderer {
                 const speed = state.rotationSpeed / 1000;
                 this.projection.rotate([r[0] + speed, r[1]]);
                 state.rotation = this.projection.rotate();
-                this.cache.isDirty = true;
             }
             this.render();
         });
@@ -105,91 +84,71 @@ export class GlobeRenderer {
             this.cache.land = topojson.feature(state.geoData.world, state.geoData.world.objects.land);
             this.cache.countries = topojson.feature(state.geoData.world, state.geoData.world.objects.countries);
         }
+        
         if (state.geoData.algeria && !this.cache.algeria) {
-            this.cache.algeria = state.geoData.algeria;
+            if (state.geoData.algeria.type === 'Topology') {
+                const key = Object.keys(state.geoData.algeria.objects)[0];
+                this.cache.algeria = topojson.feature(state.geoData.algeria, state.geoData.algeria.objects[key]);
+            } else {
+                this.cache.algeria = state.geoData.algeria;
+            }
         }
-    }
-
-    renderToBuffer() {
-        // Detect if rotation or scale has changed since last buffer render
-        const currentRotation = this.projection.rotate();
-        const currentScale = this.projection.scale();
-        
-        if (!this.cache.lastRotation) this.cache.lastRotation = [0, 0, 0];
-        
-        const hasMoved = currentRotation[0] !== this.cache.lastRotation[0] || 
-                         currentRotation[1] !== this.cache.lastRotation[1] ||
-                         currentScale !== this.cache.lastScale;
-
-        if (!this.cache.isDirty && !hasMoved) return;
-        
-        this.prepareData();
-        
-        const ctx = this.bufferContext;
-        const path = this.path.context(ctx);
-        
-        ctx.clearRect(0, 0, this.width, this.height);
-        
-        // ... (rest of rendering logic)
-        // 1. Seas
-        ctx.beginPath();
-        path({ type: 'Sphere' });
-        ctx.fillStyle = '#89C2D9'; 
-        ctx.fill();
-
-        // 2. Halo
-        ctx.strokeStyle = '#89C2D9AA';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-
-        // 3. Land
-        if (this.cache.land) {
-            ctx.beginPath();
-            path(this.cache.land);
-            ctx.fillStyle = '#1A2B3C';
-            ctx.fill();
-        }
-
-        // 4. Borders
-        if (this.cache.countries) {
-            ctx.beginPath();
-            path(this.cache.countries);
-            ctx.strokeStyle = '#2a313d';
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-        }
-
-        // 5. Algeria
-        if (this.cache.algeria) {
-            ctx.beginPath();
-            path(this.cache.algeria);
-            ctx.strokeStyle = '#00FF88';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-        }
-        
-        this.cache.isDirty = false;
-        this.cache.lastRotation = [...currentRotation];
-        this.cache.lastScale = currentScale;
     }
 
     render() {
-        this.renderToBuffer();
+        this.prepareData();
+        const { context, width, height, projection } = this;
+        const path = this.path.context(context);
         
-        const { context, width, height } = this;
         context.clearRect(0, 0, width, height);
-        
-        // Draw the pre-rendered map buffer
-        context.drawImage(this.bufferCanvas, 0, 0, width, height);
 
-        // Render dynamic events on top (must be live because of projection changes)
+        // 1. Seas
+        context.beginPath();
+        path({ type: 'Sphere' });
+        context.fillStyle = '#89C2D9'; 
+        context.fill();
+
+        // 2. Halo
+        context.strokeStyle = '#89C2D9AA';
+        context.lineWidth = 4;
+        context.stroke();
+
+        // 3. World Land
+        if (this.cache.land) {
+            context.beginPath();
+            path(this.cache.land);
+            context.fillStyle = '#1A2B3C';
+            context.fill();
+        }
+
+        // 4. World Countries Borders
+        if (this.cache.countries) {
+            context.beginPath();
+            path(this.cache.countries);
+            context.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            context.lineWidth = 0.5;
+            context.stroke();
+        }
+
+        // 5. Algeria Detailed Borders (Provinces)
+        if (this.cache.algeria) {
+            context.beginPath();
+            path(this.cache.algeria);
+            // Highlight color for Algeria
+            context.fillStyle = 'rgba(0, 255, 136, 0.05)';
+            context.fill();
+            
+            // Draw province borders
+            context.strokeStyle = '#00FF88';
+            context.lineWidth = 0.8;
+            context.stroke();
+        }
+
         this.renderEvents();
     }
 
     renderEvents() {
         const { context, projection } = this;
-        const path = this.path.context(context);
-        
         state.events.forEach(event => {
             const coords = projection(event.coordinates);
             if (!coords) return;
