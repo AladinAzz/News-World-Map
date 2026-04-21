@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlgeriaPulse 2.0 - Interactive 3D News Globe</title>
+    <meta name="description" content="Interactive 3D geospatial visualization of Algerian news. Explore events across wilayas and the world.">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>AlgeriaPulse 2.0</h1>
+            <p id="status-text">Fetching latest news...</p>
+        </header>
+
+        <main>
+            <div id="globe-container">
+                <canvas id="globe"></canvas>
+                <div id="tooltip" class="hidden"></div>
+            </div>
+            
+            <div id="controls">
+                <button id="reset-btn">Reset View</button>
+                <button id="play-pause-btn">Pause</button>
+                <div class="control-group">
+                    <label>Speed</label>
+                    <input type="range" id="speed-slider" min="10" max="150" value="75">
+                </div>
+                <div id="stats">
+                    <span id="event-count">0</span> Events Found
+                </div>
+            </div>
+        </main>
+
+        <footer id="event-list-panel" class="hidden">
+            <div class="panel-header">
+                <h2 id="selected-location">Location</h2>
+                <button id="close-panel">×</button>
+            </div>
+            <div id="event-items"></div>
+        </footer>
+    </div>
+
+    <script type="module" src="main.js?v=2"></script>
+</body>
+</html>
