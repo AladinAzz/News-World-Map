@@ -16,8 +16,9 @@ async function init() {
     const eventItems = document.getElementById('event-items');
     const selectedLocationLabel = document.getElementById('selected-location');
 
-    const timelineSlider = document.getElementById('timeline-slider');
-    const currentDateLabel = document.getElementById('current-date');
+    const timelineStart = document.getElementById('timeline-start');
+    const timelineEnd = document.getElementById('timeline-end');
+    const currentRangeLabel = document.getElementById('current-range');
     const startDateLabel = document.getElementById('start-date');
     const endDateLabel = document.getElementById('end-date');
 
@@ -38,7 +39,6 @@ async function init() {
         const allEvents = state.allEvents;
         if (!allEvents || allEvents.length === 0) return;
 
-        // Get all dates from all events within locations
         const dates = [];
         allEvents.forEach(loc => {
             loc.events.forEach(e => {
@@ -57,13 +57,16 @@ async function init() {
         startDateLabel.innerText = new Date(minTime).toLocaleDateString();
         endDateLabel.innerText = new Date(maxTime).toLocaleDateString();
 
-        const thresholdTime = minTime + (maxTime - minTime) * (state.timelineValue / 100);
-        currentDateLabel.innerText = new Date(thresholdTime).toLocaleString();
+        const startTime = minTime + (maxTime - minTime) * (state.timelineStart / 100);
+        const endTime = minTime + (maxTime - minTime) * (state.timelineEnd / 100);
+
+        currentRangeLabel.innerText = `${new Date(startTime).toLocaleDateString()} - ${new Date(endTime).toLocaleDateString()}`;
 
         const filtered = allEvents.map(loc => {
             const validEvents = loc.events.filter(e => {
                 if (!e.published) return true;
-                return new Date(e.published).getTime() <= thresholdTime;
+                const t = new Date(e.published).getTime();
+                return t >= startTime && t <= endTime;
             });
 
             if (validEvents.length > 0) {
@@ -83,24 +86,49 @@ async function init() {
     // Fetch Events
     async function fetchEvents() {
         try {
-            statusText.innerText = "Syncing history...";
+            statusText.innerText = "Loading history...";
+            const historyResp = await fetch('http://localhost:5000/api/history');
+            if (historyResp.ok) {
+                const historyData = await historyResp.json();
+                mutations.setAllEvents(historyData);
+                applyTimelineFilter();
+                statusText.innerText = "Syncing live news...";
+            }
+        } catch (e) {
+            console.warn("Initial history load failed", e);
+        }
+
+        try {
             const response = await fetch('http://localhost:5000/api/events');
             const data = await response.json();
-            
             mutations.setAllEvents(data);
             applyTimelineFilter();
-            
             statusText.innerText = "Live";
         } catch (e) {
-            console.error("Failed to fetch events", e);
+            console.error("Failed to fetch live events", e);
             statusText.innerText = "Offline Mode";
         }
     }
 
     await fetchEvents();
 
-    timelineSlider.addEventListener('input', (e) => {
-        mutations.setTimelineValue(parseInt(e.target.value));
+    timelineStart.addEventListener('input', (e) => {
+        let val = parseInt(e.target.value);
+        if (val > state.timelineEnd) {
+            val = state.timelineEnd;
+            e.target.value = val;
+        }
+        mutations.setTimelineRange(val, state.timelineEnd);
+        applyTimelineFilter();
+    });
+
+    timelineEnd.addEventListener('input', (e) => {
+        let val = parseInt(e.target.value);
+        if (val < state.timelineStart) {
+            val = state.timelineStart;
+            e.target.value = val;
+        }
+        mutations.setTimelineRange(state.timelineStart, val);
         applyTimelineFilter();
     });
 
@@ -117,8 +145,9 @@ async function init() {
     resetBtn.addEventListener('click', () => {
         state.isPaused = true;
         playPauseBtn.innerText = 'Play';
-        mutations.setTimelineValue(100);
-        timelineSlider.value = 100;
+        mutations.setTimelineRange(0, 100);
+        timelineStart.value = 0;
+        timelineEnd.value = 100;
         applyTimelineFilter();
         
         d3.transition().duration(750).tween("reset", () => {

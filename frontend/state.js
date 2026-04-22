@@ -13,7 +13,8 @@ export const state = {
     velocity: [0, 0],
     isPaused: false,
     rotationSpeed: 0,
-    timelineValue: 100 // Percentage
+    timelineStart: 0,
+    timelineEnd: 100
 };
 
 export const mutations = {
@@ -23,8 +24,9 @@ export const mutations = {
     setAllEvents(events) {
         state.allEvents = events;
     },
-    setTimelineValue(val) {
-        state.timelineValue = val;
+    setTimelineRange(start, end) {
+        state.timelineStart = start;
+        state.timelineEnd = end;
     },
     setGeoData(type, data) {
         state.geoData[type] = data;

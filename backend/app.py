@@ -65,6 +65,16 @@ def get_events_logic():
         logger.error(f"Logic Error: {e}")
         return []
 
+@app.route('/api/history', methods=['GET'])
+def get_history():
+    try:
+        all_events = history_service.get_all_history()
+        aggregated_data = AggregationService.aggregate(all_events)
+        return jsonify(aggregated_data)
+    except Exception as e:
+        logger.error(f"History Error: {e}")
+        return jsonify([]), 500
+
 @app.route('/api/events', methods=['GET'])
 def get_events():
     cached_data = cache.get()

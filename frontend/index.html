@@ -44,9 +44,13 @@
 
         <div id="timeline-container">
             <div class="timeline-header">
-                <span id="current-date">Timeline</span>
+                <span id="current-range">Timeline Range</span>
             </div>
-            <input type="range" id="timeline-slider" min="0" max="100" value="100">
+            <div class="range-slider">
+                <div class="slider-track"></div>
+                <input type="range" id="timeline-start" min="0" max="100" value="0">
+                <input type="range" id="timeline-end" min="0" max="100" value="100">
+            </div>
             <div class="timeline-labels">
                 <span id="start-date">-</span>
                 <span id="end-date">-</span>

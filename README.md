@@ -2,7 +2,7 @@
 
 AlgeriaPulse 2.0 is a state-of-the-art geospatial visualization platform that monitors and maps news across Algeria and the world in real-time. Using AI-powered extraction and a dynamic 3D globe, it provides an intuitive way to explore the regional impact of current events.
 
-![App Preview](image.png) *(Note: Replace with actual screenshot)*
+![App Preview](image.png) 
 
 ## 🌟 Features
 

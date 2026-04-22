@@ -5,26 +5,26 @@ export class GlobeRenderer {
         this.canvas = canvas;
         this.tooltip = tooltip;
         this.context = canvas.getContext('2d');
-        
+
         this.projection = d3.geoOrthographic()
             .scale(state.scale)
             .center([0, 0])
             .rotate(state.rotation);
-            
+
         this.path = d3.geoPath().projection(this.projection);
-        
+
         this.cache = {
             land: null,
             countries: null,
             algeria: null
         };
-        
+
         this.width = 0;
         this.height = 0;
-        
+
         this.resize();
         window.addEventListener('resize', () => this.resize());
-        
+
         this.setupInteractions();
         this.startAnimation();
     }
@@ -33,14 +33,14 @@ export class GlobeRenderer {
         const rect = this.canvas.parentElement.getBoundingClientRect();
         this.width = rect.width;
         this.height = rect.height;
-        
+
         const dpr = window.devicePixelRatio || 1;
         this.canvas.width = this.width * dpr;
         this.canvas.height = this.height * dpr;
         this.context.scale(dpr, dpr);
-        
+
         this.projection.translate([this.width / 2, this.height / 2]);
-        
+
         const minDim = Math.min(this.width, this.height);
         state.scale = minDim * 0.45;
         this.projection.scale(state.scale);
@@ -58,7 +58,7 @@ export class GlobeRenderer {
             .on('end', () => { state.isDragging = false; });
 
         d3.select(this.canvas).call(drag);
-        
+
         d3.select(this.canvas).on('wheel', (event) => {
             event.preventDefault();
             const delta = -event.deltaY;
@@ -81,10 +81,16 @@ export class GlobeRenderer {
 
     prepareData() {
         if (state.geoData.world && !this.cache.land) {
-            this.cache.land = topojson.feature(state.geoData.world, state.geoData.world.objects.land);
-            this.cache.countries = topojson.feature(state.geoData.world, state.geoData.world.objects.countries);
+            if (state.geoData.world.type === 'Topology') {
+                this.cache.land = topojson.feature(state.geoData.world, state.geoData.world.objects.land);
+                this.cache.countries = topojson.feature(state.geoData.world, state.geoData.world.objects.countries);
+            } else {
+                // Direct GeoJSON support
+                this.cache.land = state.geoData.world;
+                this.cache.countries = state.geoData.world;
+            }
         }
-        
+
         if (state.geoData.algeria && !this.cache.algeria) {
             if (state.geoData.algeria.type === 'Topology') {
                 const key = Object.keys(state.geoData.algeria.objects)[0];
@@ -99,13 +105,13 @@ export class GlobeRenderer {
         this.prepareData();
         const { context, width, height, projection } = this;
         const path = this.path.context(context);
-        
+
         context.clearRect(0, 0, width, height);
 
         // 1. Seas
         context.beginPath();
         path({ type: 'Sphere' });
-        context.fillStyle = '#89C2D9'; 
+        context.fillStyle = '#89C2D9';
         context.fill();
 
         // 2. Halo
@@ -137,7 +143,7 @@ export class GlobeRenderer {
             // Highlight color for Algeria
             context.fillStyle = 'rgba(0, 255, 136, 0.05)';
             context.fill();
-            
+
             // Draw province borders
             context.strokeStyle = '#00FF88';
             context.lineWidth = 0.8;
@@ -149,6 +155,8 @@ export class GlobeRenderer {
 
     renderEvents() {
         const { context, projection } = this;
+        const now = performance.now();
+
         state.events.forEach(event => {
             const coords = projection(event.coordinates);
             if (!coords) return;
@@ -156,15 +164,46 @@ export class GlobeRenderer {
             const gdistance = d3.geoDistance(event.coordinates, projection.invert([this.width / 2, this.height / 2]));
             if (gdistance > Math.PI / 2) return;
 
-            const radius = Math.sqrt(event.intensity) * 6 + 2;
-            
+            const baseRadius = Math.sqrt(event.intensity) * 4 + 2;
+            const color = event.type === 'international' ? '#FFD700' : '#00FF88';
+            const colorRGB = event.type === 'international' ? '255, 215, 0' : '0, 255, 136';
+
+            // 1. Core Dot (Solid)
             context.beginPath();
-            context.arc(coords[0], coords[1], radius, 0, 2 * Math.PI);
-            context.fillStyle = event.type === 'international' ? '#FFD700' : '#00FF88'; 
+            context.arc(coords[0], coords[1], baseRadius, 0, 2 * Math.PI);
+            context.fillStyle = color;
+            context.shadowBlur = 15;
+            context.shadowColor = color;
             context.fill();
-            context.strokeStyle = '#fff';
-            context.lineWidth = 1.5;
-            context.stroke();
+
+            // Reset shadow for rings
+            context.shadowBlur = 0;
+
+            // 2. Pulsing Rings
+            const pulseDuration = 2000; // 2 seconds
+            const pulseCount = 2;
+
+            for (let i = 0; i < pulseCount; i++) {
+                // Calculate phase (0 to 1) for each ring, offset by i
+                const phase = ((now + (i * pulseDuration / pulseCount)) % pulseDuration) / pulseDuration;
+
+                // Ring expands from baseRadius up to 4x baseRadius
+                const ringRadius = baseRadius + (phase * baseRadius * 4);
+                // Opacity fades out as it expands
+                const opacity = (1 - phase) * 0.6;
+
+                context.beginPath();
+                context.arc(coords[0], coords[1], ringRadius, 0, 2 * Math.PI);
+                context.strokeStyle = `rgba(${colorRGB}, ${opacity})`;
+                context.lineWidth = 1.5;
+                context.stroke();
+            }
+
+            // 3. Inner core highlight
+            context.beginPath();
+            context.arc(coords[0], coords[1], baseRadius * 0.5, 0, 2 * Math.PI);
+            context.fillStyle = '#fff';
+            context.fill();
         });
     }
 }
