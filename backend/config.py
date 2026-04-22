@@ -8,7 +8,7 @@ class Config:
     RSS_URL = "https://news.google.com/rss?hl=fr-DZ&gl=DZ&ceid=DZ:fr"
     CACHE_TTL = 1200  # 20 minutes in seconds
     MAX_EVENTS = 20
-    MEDITERRANEAN = [3.0, 36.8]
+    MEDITERRANEAN = [15.0, 35.0]
     
     # Wilayas of Algeria (58)
     WILAYAS = [

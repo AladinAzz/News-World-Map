@@ -1,7 +1,7 @@
 export async function fetchGeoData() {
     // Using local data as requested
     const worldUrl = "./data/countries-110m.json";
-    const algeriaUrl = "./data/all-wilayas.geojson";
+    const algeriaUrl = "./data/all-wilayas.json";
 
     const results = { world: null, algeria: null };
 

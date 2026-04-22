@@ -59,7 +59,7 @@ async function init() {
         state.isPaused = true;
         playPauseBtn.innerText = 'Play';
         d3.transition().duration(750).tween("reset", () => {
-            const r = d3.interpolate(renderer.projection.rotate(), [0, -30]);
+            const r = d3.interpolate(renderer.projection.rotate(), [-15, -35]);
             const s = d3.interpolate(renderer.projection.scale(), 300);
             return (t) => {
                 renderer.projection.rotate(r(t));

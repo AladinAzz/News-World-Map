@@ -6,12 +6,12 @@ export const state = {
         world: null,
         algeria: null
     },
-    rotation: [0, -30],
+    rotation: [-15, -35],
     scale: 300,
     isDragging: false,
     velocity: [0, 0],
     isPaused: false,
-    rotationSpeed: 75
+    rotationSpeed: 0
 };
 
 export const mutations = {
