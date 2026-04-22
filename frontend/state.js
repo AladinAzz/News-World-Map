@@ -14,7 +14,8 @@ export const state = {
     isPaused: false,
     rotationSpeed: 0,
     timelineStart: 0,
-    timelineEnd: 100
+    timelineEnd: 100,
+    language: 'en' // 'en' or 'ar'
 };
 
 export const mutations = {
@@ -27,6 +28,9 @@ export const mutations = {
     setTimelineRange(start, end) {
         state.timelineStart = start;
         state.timelineEnd = end;
+    },
+    setLanguage(lang) {
+        state.language = lang;
     },
     setGeoData(type, data) {
         state.geoData[type] = data;

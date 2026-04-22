@@ -1,6 +1,7 @@
 import { state, mutations } from './state.js';
 import { fetchGeoData } from './utils/geo.js';
 import { GlobeRenderer } from './rendering/globe.js';
+import { t } from './utils/i18n.js';
 
 async function init() {
     window.state = state; // For debugging
@@ -22,6 +23,34 @@ async function init() {
     const startDateLabel = document.getElementById('start-date');
     const endDateLabel = document.getElementById('end-date');
 
+    const langBtns = document.querySelectorAll('.lang-btn');
+
+    function applyTranslations() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            el.innerText = t(key, state.language);
+        });
+        document.body.dir = state.language === 'ar' ? 'rtl' : 'ltr';
+        
+        // Update dynamic labels if needed
+        if (state.isPaused) {
+            playPauseBtn.innerText = t('play', state.language);
+        } else {
+            playPauseBtn.innerText = t('pause', state.language);
+        }
+    }
+
+    langBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const lang = btn.getAttribute('data-lang');
+            mutations.setLanguage(lang);
+            langBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            applyTranslations();
+            applyTimelineFilter(); // Re-render range label
+        });
+    });
+
     const renderer = new GlobeRenderer(canvas, tooltip);
 
     // Load Geo Data
@@ -31,7 +60,7 @@ async function init() {
         mutations.setGeoData('algeria', geo.algeria);
     } catch (e) {
         console.error("Failed to load geo data", e);
-        statusText.innerText = "Error loading maps.";
+        statusText.innerText = t('errorMaps', state.language);
     }
 
     // Timeline Filtering Logic
@@ -86,13 +115,13 @@ async function init() {
     // Fetch Events
     async function fetchEvents() {
         try {
-            statusText.innerText = "Loading history...";
+            statusText.innerText = t('loadingHistory', state.language);
             const historyResp = await fetch('http://localhost:5000/api/history');
             if (historyResp.ok) {
                 const historyData = await historyResp.json();
                 mutations.setAllEvents(historyData);
                 applyTimelineFilter();
-                statusText.innerText = "Syncing live news...";
+                statusText.innerText = t('syncing', state.language);
             }
         } catch (e) {
             console.warn("Initial history load failed", e);
@@ -103,14 +132,15 @@ async function init() {
             const data = await response.json();
             mutations.setAllEvents(data);
             applyTimelineFilter();
-            statusText.innerText = "Live";
+            statusText.innerText = t('live', state.language);
         } catch (e) {
             console.error("Failed to fetch live events", e);
-            statusText.innerText = "Offline Mode";
+            statusText.innerText = t('offline', state.language);
         }
     }
 
     await fetchEvents();
+    applyTranslations();
 
     timelineStart.addEventListener('input', (e) => {
         let val = parseInt(e.target.value);
@@ -135,7 +165,7 @@ async function init() {
     // Controls
     playPauseBtn.addEventListener('click', () => {
         state.isPaused = !state.isPaused;
-        playPauseBtn.innerText = state.isPaused ? 'Play' : 'Pause';
+        playPauseBtn.innerText = state.isPaused ? t('play', state.language) : t('pause', state.language);
     });
 
     speedSlider.addEventListener('input', (e) => {
@@ -180,7 +210,11 @@ async function init() {
             tooltip.classList.remove('hidden');
             tooltip.style.left = `${e.clientX + 10}px`;
             tooltip.style.top = `${e.clientY + 10}px`;
-            tooltip.innerHTML = `<strong>${found.location}</strong><br>${found.events[0].summary}`;
+            
+            const locationName = found.location === "Global Event" ? t('globalEvent', state.language) : found.location;
+            const summary = found.events[0]['summary_' + state.language] || found.events[0].summary;
+            
+            tooltip.innerHTML = `<strong>${locationName}</strong><br>${summary}`;
             canvas.style.cursor = 'pointer';
         } else {
             tooltip.classList.add('hidden');
@@ -219,14 +253,17 @@ async function init() {
     });
 
     function showPanel(locationData) {
-        selectedLocationLabel.innerText = locationData.location;
-        eventItems.innerHTML = locationData.events.map(event => `
-            <div class="event-card">
-                <h3>${event.title}</h3>
-                <p>${event.summary}</p>
-                <a href="${event.url}" target="_blank">Read Full Article →</a>
-            </div>
-        `).join('');
+        selectedLocationLabel.innerText = locationData.location === "Global Event" ? t('globalEvent', state.language) : locationData.location;
+        eventItems.innerHTML = locationData.events.map(event => {
+            const summary = event['summary_' + state.language] || event.summary;
+            return `
+                <div class="event-card">
+                    <h3>${event.title}</h3>
+                    <p>${summary}</p>
+                    <a href="${event.url}" target="_blank">${t('readMore', state.language)}</a>
+                </div>
+            `;
+        }).join('');
         eventPanel.classList.remove('hidden');
     }
 

@@ -6,14 +6,21 @@
     <title>AlgeriaPulse 2.0 - Interactive 3D News Globe</title>
     <meta name="description" content="Interactive 3D geospatial visualization of Algerian news. Explore events across wilayas and the world.">
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+Arabic:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 </head>
 <body>
     <div id="app">
         <header>
-            <h1>AlgeriaPulse 2.0</h1>
-            <p id="status-text">Fetching latest news...</p>
+            <div class="header-content">
+                <h1 data-i18n="title">AlgeriaPulse 2.0</h1>
+                <p id="status-text" data-i18n="fetching">Fetching latest news...</p>
+            </div>
+            <div id="lang-switcher">
+                <button id="btn-en" class="lang-btn active" data-lang="en">EN</button>
+                <button id="btn-ar" class="lang-btn" data-lang="ar">AR</button>
+            </div>
         </header>
 
         <main>
@@ -23,20 +30,21 @@
             </div>
             
             <div id="controls">
-                <button id="reset-btn">Reset View</button>
-                <button id="play-pause-btn">Pause</button>
+                <button id="reset-btn" data-i18n="resetView">Reset View</button>
+                <button id="play-pause-btn" data-i18n="pause">Pause</button>
                 <div class="control-group">
-                    <label>Speed</label>
+                    <label data-i18n="speed">Speed</label>
                     <input type="range" id="speed-slider" min="0" max="150" value="0">
+                </div>
                 <div id="stats">
-                    <span id="event-count">0</span> Events
+                    <span id="event-count">0</span> <span data-i18n="events">Events</span>
                 </div>
             </div>
         </main>
 
         <footer id="event-list-panel" class="hidden">
             <div class="panel-header">
-                <h2 id="selected-location">Location</h2>
+                <h2 id="selected-location" data-i18n="location">Location</h2>
                 <button id="close-panel">×</button>
             </div>
             <div id="event-items"></div>
@@ -44,7 +52,7 @@
 
         <div id="timeline-container">
             <div class="timeline-header">
-                <span id="current-range">Timeline Range</span>
+                <span id="current-range" data-i18n="timelineRange">Timeline Range</span>
             </div>
             <div class="range-slider">
                 <div class="slider-track"></div>

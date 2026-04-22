@@ -24,7 +24,8 @@ class GeminiService:
         For each item, return a JSON object with:
         - location: The specific Algerian wilaya, city, or country mentioned.
         - scope: 'local' (if wilaya/city), 'national' (if Algeria general), or 'international' (if another country).
-        - summary: A concise 1-sentence summary.
+        - summary_en: A concise 1-sentence summary in English.
+        - summary_ar: A concise 1-sentence summary in Arabic.
         - url: The original URL.
 
         Rules:
@@ -65,28 +66,32 @@ class GeminiService:
                 "location": "Oran",
                 "scope": "local",
                 "intensity": 8,
-                "summary": "Nouveau complexe pétrochimique inauguré à Oran.",
+                "summary_en": "New petrochemical complex inaugurated in Oran.",
+                "summary_ar": "افتتاح مجمع بتروكيميائي جديد في وهران.",
                 "url": "http://example.com/oran"
             },
             {
                 "location": "Alger",
                 "scope": "local",
                 "intensity": 9,
-                "summary": "Sommet technologique international à Alger.",
+                "summary_en": "International technology summit in Algiers.",
+                "summary_ar": "قمة تكنولوجية دولية في الجزائر العاصمة.",
                 "url": "http://example.com/alger"
             },
             {
                 "location": "France",
                 "scope": "international",
                 "intensity": 5,
-                "summary": "Coopération culturelle renforcée entre Alger et Paris.",
+                "summary_en": "Reinforced cultural cooperation between Algiers and Paris.",
+                "summary_ar": "تعزيز التعاون الثقافي بين الجزائر وباريس.",
                 "url": "http://example.com/france"
             },
             {
                 "location": "Global Event",
                 "scope": "international",
                 "intensity": 7,
-                "summary": "Annonce majeure sur le climat impactant la région Méditerranée.",
+                "summary_en": "Major climate announcement impacting the Mediterranean region.",
+                "summary_ar": "إعلان مناخي هام يؤثر على منطقة البحر الأبيض المتوسط.",
                 "url": "http://example.com/global"
             }
         ]
