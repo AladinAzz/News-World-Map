@@ -5,9 +5,17 @@ load_dotenv()
 
 class Config:
     GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
-    RSS_URL = "https://news.google.com/rss?hl=fr-DZ&gl=DZ&ceid=DZ:fr"
+    RSS_FEEDS = [
+        "https://news.google.com/rss?hl=fr-DZ&gl=DZ&ceid=DZ:fr",
+        "https://www.tsa-algerie.com/feed/",
+        "https://www.aps.dz/algerie?format=feed&type=rss",
+        "https://allafrica.com/tools/headlines/feeds/algeria.xml",
+        "https://www.algerie-eco.com/feed/",
+        "https://www.algerie360.com/feed/",
+        "https://www.echoroukonline.com/feed/"
+    ]
     CACHE_TTL = 1200  # 20 minutes in seconds
-    MAX_EVENTS = 20
+    MAX_EVENTS = 100
     MEDITERRANEAN = [15.0, 35.0]
     
     # Wilayas of Algeria (58)

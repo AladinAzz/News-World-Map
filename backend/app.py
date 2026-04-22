@@ -5,6 +5,7 @@ from backend.services.gemini_service import GeminiService
 from backend.services.validation import ValidationService
 from backend.services.normalization import NormalizationService
 from backend.services.aggregation import AggregationService
+from backend.services.history_service import HistoryService
 from backend.cache.cache import Cache
 import traceback
 import logging
@@ -18,35 +19,47 @@ CORS(app)
 cache = Cache()
 gemini_service = GeminiService()
 normalization_service = NormalizationService()
+history_service = HistoryService()
 
 def get_events_logic():
     try:
         # 1. RSS Ingestion
-        raw_news = RSSService.fetch_news()
-        logger.info(f"Fetched {len(raw_news)} items from RSS")
+        raw_news_all = RSSService.fetch_news()
+        logger.info(f"Fetched {len(raw_news_all)} items from RSS")
         
-        # 2. Gemini Extraction
-        processed_events = gemini_service.process_news_batch(raw_news)
-        logger.info(f"Gemini processed {len(processed_events)} items")
+        # 2. Filter out already processed news
+        raw_news_new = history_service.filter_out_existing(raw_news_all)
+        logger.info(f"{len(raw_news_new)} items are new and need processing")
         
-        # 3. Validation & Normalization
-        valid_events = []
-        for i, event in enumerate(processed_events):
-            if i < len(raw_news):
-                event['title'] = raw_news[i]['title']
-                event['url'] = raw_news[i]['url']
+        # 3. Gemini Extraction (only for new news)
+        new_processed_events = []
+        if raw_news_new:
+            new_processed_events = gemini_service.process_news_batch(raw_news_new)
+            logger.info(f"Gemini processed {len(new_processed_events)} new items")
+        
+        # 4. Validation & Normalization for new news
+        valid_new_events = []
+        for i, event in enumerate(new_processed_events):
+            if i < len(raw_news_new):
+                event['title'] = raw_news_new[i]['title']
+                event['url'] = raw_news_new[i]['url']
+                event['published'] = raw_news_new[i]['published']
                 
             validated = ValidationService.validate(event)
             if validated:
                 normalized = normalization_service.normalize(validated)
-                valid_events.append(normalized)
-            else:
-                logger.warning(f"Validation failed for location: {event.get('location')}")
+                valid_new_events.append(normalized)
+        
+        # 5. Save new events to history
+        if valid_new_events:
+            history_service.save_to_history(valid_new_events)
+            
+        # 6. Combine all history for aggregation
+        all_events = history_service.get_all_history()
+        logger.info(f"Total events in history: {len(all_events)}")
                 
-        logger.info(f"Total valid events: {len(valid_events)}")
-                
-        # 4. Aggregation
-        aggregated_data = AggregationService.aggregate(valid_events)
+        # 7. Aggregation
+        aggregated_data = AggregationService.aggregate(all_events)
         return aggregated_data
     except Exception as e:
         logger.error(f"Logic Error: {e}")

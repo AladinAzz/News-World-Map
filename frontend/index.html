@@ -27,10 +27,9 @@
                 <button id="play-pause-btn">Pause</button>
                 <div class="control-group">
                     <label>Speed</label>
-                    <input type="range" id="speed-slider" min="10" max="150" value="75">
-                </div>
+                    <input type="range" id="speed-slider" min="0" max="150" value="0">
                 <div id="stats">
-                    <span id="event-count">0</span> Events Found
+                    <span id="event-count">0</span> Events
                 </div>
             </div>
         </main>
@@ -42,6 +41,17 @@
             </div>
             <div id="event-items"></div>
         </footer>
+
+        <div id="timeline-container">
+            <div class="timeline-header">
+                <span id="current-date">Timeline</span>
+            </div>
+            <input type="range" id="timeline-slider" min="0" max="100" value="100">
+            <div class="timeline-labels">
+                <span id="start-date">-</span>
+                <span id="end-date">-</span>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="main.js?v=2"></script>

@@ -1,7 +1,8 @@
 export const state = {
     mode: "global", // "global" or "wilaya"
     selectedLocation: null,
-    events: [],
+    events: [], // Filtered events shown on globe
+    allEvents: [], // Full history from server
     geoData: {
         world: null,
         algeria: null
@@ -11,12 +12,19 @@ export const state = {
     isDragging: false,
     velocity: [0, 0],
     isPaused: false,
-    rotationSpeed: 0
+    rotationSpeed: 0,
+    timelineValue: 100 // Percentage
 };
 
 export const mutations = {
     setEvents(events) {
         state.events = events;
+    },
+    setAllEvents(events) {
+        state.allEvents = events;
+    },
+    setTimelineValue(val) {
+        state.timelineValue = val;
     },
     setGeoData(type, data) {
         state.geoData[type] = data;

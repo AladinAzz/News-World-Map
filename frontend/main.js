@@ -16,6 +16,11 @@ async function init() {
     const eventItems = document.getElementById('event-items');
     const selectedLocationLabel = document.getElementById('selected-location');
 
+    const timelineSlider = document.getElementById('timeline-slider');
+    const currentDateLabel = document.getElementById('current-date');
+    const startDateLabel = document.getElementById('start-date');
+    const endDateLabel = document.getElementById('end-date');
+
     const renderer = new GlobeRenderer(canvas, tooltip);
 
     // Load Geo Data
@@ -28,22 +33,76 @@ async function init() {
         statusText.innerText = "Error loading maps.";
     }
 
+    // Timeline Filtering Logic
+    function applyTimelineFilter() {
+        const allEvents = state.allEvents;
+        if (!allEvents || allEvents.length === 0) return;
+
+        // Get all dates from all events within locations
+        const dates = [];
+        allEvents.forEach(loc => {
+            loc.events.forEach(e => {
+                if (e.published) dates.push(new Date(e.published).getTime());
+            });
+        });
+
+        if (dates.length === 0) {
+            mutations.setEvents(allEvents);
+            return;
+        }
+
+        const minTime = Math.min(...dates);
+        const maxTime = Math.max(...dates);
+        
+        startDateLabel.innerText = new Date(minTime).toLocaleDateString();
+        endDateLabel.innerText = new Date(maxTime).toLocaleDateString();
+
+        const thresholdTime = minTime + (maxTime - minTime) * (state.timelineValue / 100);
+        currentDateLabel.innerText = new Date(thresholdTime).toLocaleString();
+
+        const filtered = allEvents.map(loc => {
+            const validEvents = loc.events.filter(e => {
+                if (!e.published) return true;
+                return new Date(e.published).getTime() <= thresholdTime;
+            });
+
+            if (validEvents.length > 0) {
+                return {
+                    ...loc,
+                    events: validEvents,
+                    intensity: validEvents.length
+                };
+            }
+            return null;
+        }).filter(l => l !== null);
+
+        mutations.setEvents(filtered);
+        eventCount.innerText = filtered.reduce((acc, l) => acc + l.events.length, 0);
+    }
+
     // Fetch Events
     async function fetchEvents() {
         try {
-            statusText.innerText = "Fetching latest news...";
+            statusText.innerText = "Syncing history...";
             const response = await fetch('http://localhost:5000/api/events');
             const data = await response.json();
-            mutations.setEvents(data);
-            eventCount.innerText = data.length;
-            statusText.innerText = "Updated just now";
+            
+            mutations.setAllEvents(data);
+            applyTimelineFilter();
+            
+            statusText.innerText = "Live";
         } catch (e) {
             console.error("Failed to fetch events", e);
-            statusText.innerText = "Server offline. Showing local data.";
+            statusText.innerText = "Offline Mode";
         }
     }
 
     await fetchEvents();
+
+    timelineSlider.addEventListener('input', (e) => {
+        mutations.setTimelineValue(parseInt(e.target.value));
+        applyTimelineFilter();
+    });
 
     // Controls
     playPauseBtn.addEventListener('click', () => {
@@ -58,6 +117,10 @@ async function init() {
     resetBtn.addEventListener('click', () => {
         state.isPaused = true;
         playPauseBtn.innerText = 'Play';
+        mutations.setTimelineValue(100);
+        timelineSlider.value = 100;
+        applyTimelineFilter();
+        
         d3.transition().duration(750).tween("reset", () => {
             const r = d3.interpolate(renderer.projection.rotate(), [-15, -35]);
             const s = d3.interpolate(renderer.projection.scale(), 300);

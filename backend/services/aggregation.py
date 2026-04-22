@@ -19,6 +19,7 @@ class AggregationService:
                 "title": event["title"],
                 "summary": event["summary"],
                 "url": event["url"],
+                "published": event.get("published", ""),
                 "coordinates": event["coordinates"]
             })
             
